@@ -27,19 +27,9 @@ pub fn fetch_test_cases(problem_name: &str) -> Result<(), Box<dyn std::error::Er
 }
 
 
-pub fn run_test_cases() -> Result<(), Box<dyn std::error::Error>> {
-    //FØRST NÅ er vi opptatt av effektivitet.
-    // let stdin = io::stdin(); //"Global stdin entity"
-    // let stdout = io::stdout(); //"Global stdout entity"
-    // let mut stdin_handle = stdin.lock(); 
-    // let mut stdout_handle = io::BufWriter::new(stdout.lock()); //stdout har ikke buffered writing, så vi lager en BufWriter oppå for effektivitet
-
-    //stdin_handle og stdout_handle er nå buffered og immutably borrowed takket være locken
-
+pub fn run_test_cases(test_cases_path: &Path) -> Result<(), Box<dyn std::error::Error>> {
 
     // https://doc.rust-lang.org/std/path/struct.Path.html#method.read_dir
-
-    let test_cases_path = Path::new("test_cases");
 
     for entry in test_cases_path.read_dir()?.filter_map(|dir_entry| dir_entry.ok()) {
         if let Some(extension) = entry.path().extension() {
@@ -49,7 +39,7 @@ pub fn run_test_cases() -> Result<(), Box<dyn std::error::Error>> {
                 let out_file = File::create(out_path)?;
                 let mut in_file_handle = BufReader::new(in_file); 
                 let mut out_file_handle = BufWriter::new(out_file); 
-                solve::solve(&mut in_file_handle, &mut out_file_handle)?;
+                solve::interact_remote(&mut in_file_handle, &mut out_file_handle)?;
             }
         }
     }
@@ -59,8 +49,8 @@ pub fn run_test_cases() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 
-pub fn generate_tests_rs_file(tests_file_path: &Path, test_cases_path: &Path) -> Result<(), Box<dyn std::error::Error>> {
-    let tests_file = File::create(tests_file_path.join("tests.rs"))?;
+pub fn generate_integration_tests(tests_file_path: &Path, test_cases_path: &Path) -> Result<(), Box<dyn std::error::Error>> {
+    let tests_file = File::create(tests_file_path.join("integration_tests.rs"))?;
     let mut tests_file_handle = BufWriter::new(tests_file); 
     writeln!(tests_file_handle, "#![cfg(test)]\n")?;
 
@@ -73,7 +63,7 @@ pub fn generate_tests_rs_file(tests_file_path: &Path, test_cases_path: &Path) ->
                 .replace('\\', "/");
 
                 writeln!(tests_file_handle, "{}",
-                    format!("#[test]\nfn {}() {{\n\tassert!(super::test_handler::evaluate_output(std::path::Path::new(\"{}\")).unwrap());\n}}\n", 
+                    format!("#[test]\nfn {}() {{\n\tassert!(kattis_test_system::evaluate_output(std::path::Path::new(\"{}\")).unwrap());\n}}\n", 
                     test_name, 
                     out_path)
                 )?;

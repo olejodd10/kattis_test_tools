@@ -3,8 +3,6 @@
 use structopt::StructOpt;
 
 //OBS!! Merk at std::error::Error er en trait, mens std::io::Error er en struct!!
-mod test_handler;
-mod tests;
 
 #[derive(StructOpt, Debug)]
 struct Cli {
@@ -15,7 +13,6 @@ struct Cli {
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
 
-
     // let args = Cli::from_args();
     // println!("{:?}", args);
 
@@ -23,9 +20,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let tests_file_path = std::path::Path::new("src");
     let test_cases_path = std::path::Path::new("test_cases");
 
-    test_handler::fetch_test_cases(kattis_problem)?;
-    test_handler::run_test_cases()?;
-    test_handler::generate_tests_rs_file(tests_file_path, test_cases_path)?;
+    kattis_test_system::fetch_test_cases(kattis_problem)?;
+    kattis_test_system::run_test_cases(test_cases_path)?;
+    kattis_test_system::generate_tests_rs_file(tests_file_path, test_cases_path)?;
 
     Ok(())
 }
