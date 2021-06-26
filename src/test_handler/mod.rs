@@ -1,10 +1,31 @@
 
-use std::io::{BufReader, BufWriter, Read};
+use std::io::{Write, BufReader, BufWriter, Read};
 use std::fs::File;
 use std::path::{Path, PathBuf};
 
 //Structopt bruker Clap, men har ekstra makroer for å lage clap code for struct definisjoner
 mod solve;
+
+// Merk at PathBuf implementerer Deref sånn at den returnerer &Path, derfor er as_path() unødvendig, akkurat som at as_str() er unødvendig for String
+
+pub fn fetch_test_cases(problem_name: &str) -> Result<(), Box<dyn std::error::Error>> {
+    use curl::easy::Easy;
+    
+    let test_cases_path = PathBuf::from("test_cases");
+
+    let mut easy = Easy::new();
+    easy.url(
+        &format!("https://open.kattis.com/problems/{}/file/statement/samples.zip", problem_name)
+    )?;
+    easy.write_function(move |data| { 
+        zip_extract::extract(std::io::Cursor::new(data), &test_cases_path, true).expect("Unzipping error");
+        Ok(data.len())
+    })?;
+    easy.perform()?;
+
+    Ok(())
+}
+
 
 pub fn run_test_cases() -> Result<(), Box<dyn std::error::Error>> {
     //FØRST NÅ er vi opptatt av effektivitet.
@@ -24,7 +45,7 @@ pub fn run_test_cases() -> Result<(), Box<dyn std::error::Error>> {
         if let Some(extension) = entry.path().extension() {
             if let Some("in") = extension.to_str() {
                 let in_file = File::open(entry.path())?;
-                let out_path = entry.path().as_path().with_extension("out");
+                let out_path = entry.path().with_extension("out");
                 let out_file = File::create(out_path)?;
                 let mut in_file_handle = BufReader::new(in_file); 
                 let mut out_file_handle = BufWriter::new(out_file); 
@@ -37,33 +58,34 @@ pub fn run_test_cases() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-pub fn fetch_test_cases(problem_name: &str) -> Result<(), Box<dyn std::error::Error>> {
-    use curl::easy::Easy;
-    
-    let test_cases_path = PathBuf::from("test_cases");
 
-    let mut easy = Easy::new();
-    easy.url(
-        format!("https://open.kattis.com/problems/{}/file/statement/samples.zip", problem_name).as_str()
-    )?;
-    easy.write_function(move |data| { // zip_name moves
-        zip_extract::extract(std::io::Cursor::new(data), &test_cases_path, true).expect("Unzipping error");
-        Ok(data.len())
-    })?;
-    easy.perform()?;
+pub fn generate_tests_rs_file(tests_file_path: &Path, test_cases_path: &Path) -> Result<(), Box<dyn std::error::Error>> {
+    let tests_file = File::create(tests_file_path.join("tests.rs"))?;
+    let mut tests_file_handle = BufWriter::new(tests_file); 
+    writeln!(tests_file_handle, "#![cfg(test)]\n")?;
+
+    for entry in test_cases_path.read_dir()?.filter_map(|dir_entry| dir_entry.ok()) {
+        if let Some(extension) = entry.path().extension() {
+            if let Some("out") = extension.to_str() {
+                let test_name = String::from(entry.path().file_stem().unwrap().to_str().unwrap())
+                .replace('-', "_");
+                let out_path = String::from(entry.path().to_str().unwrap())
+                .replace('\\', "/");
+
+                writeln!(tests_file_handle, "{}",
+                    format!("#[test]\nfn {}() {{\n\tassert!(super::test_handler::evaluate_output(std::path::Path::new(\"{}\")).unwrap());\n}}\n", 
+                    test_name, 
+                    out_path)
+                )?;
+            }
+        }
+    }
 
     Ok(())
 }
 
-pub fn generate_tests() -> Result<(), Box<dyn std::error::Error>> {
-    unimplemented!()
-}
 
-fn evaluate_output(out_path: &PathBuf) -> Result<bool, Box<dyn std::error::Error>> {
-    compare_file_tokens(out_path, &out_path.as_path().with_extension("ans"))
-}
-
-fn compare_file_tokens(file1: &PathBuf, file2: &PathBuf) -> Result<bool, Box<dyn std::error::Error>> {
+fn compare_file_tokens(file1: &Path, file2: &Path) -> Result<bool, Box<dyn std::error::Error>> {
     let file1 = File::open(file1)?;
     let file2 = File::open(file2)?;
     let mut file1_handle = BufReader::new(file1); 
@@ -79,4 +101,9 @@ fn compare_file_tokens(file1: &PathBuf, file2: &PathBuf) -> Result<bool, Box<dyn
     let tokens2: Vec<&str> = string2.split_whitespace().filter(|word| word.len() > 0).collect();
 
     Ok(tokens1==tokens2)
+}
+
+
+pub fn evaluate_output(out_path: &Path) -> Result<bool, Box<dyn std::error::Error>> {
+    compare_file_tokens(out_path, &out_path.with_extension("ans"))
 }

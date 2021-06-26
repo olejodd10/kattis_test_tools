@@ -19,9 +19,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // let args = Cli::from_args();
     // println!("{:?}", args);
 
-    test_handler::fetch_test_cases("diplomacy")?;
+    let kattis_problem = "diplomacy";
+    let tests_file_path = std::path::Path::new("src");
+    let test_cases_path = std::path::Path::new("test_cases");
+
+    test_handler::fetch_test_cases(kattis_problem)?;
     test_handler::run_test_cases()?;
-    // test_handler::generate_tests()?;
+    test_handler::generate_tests_rs_file(tests_file_path, test_cases_path)?;
 
     Ok(())
 }
