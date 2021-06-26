@@ -7,3 +7,5 @@ edition = "2018"
 
 [dependencies]
 structopt = "0.3.13"
+curl = "0.4.38"
+zip-extract = "0.1.0"
