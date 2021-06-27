@@ -24,7 +24,7 @@ enum Ktt {
     Fetch {
         #[structopt(
             name="kattis-problem-name",
-            help="Kattis problem to fetch sample test cases from.",
+            help="Kattis problem to fetch sample test cases from",
         )]
         problem_name: String,
 
@@ -43,9 +43,16 @@ enum Ktt {
         #[structopt(
             default_value="rust", 
             name="config", 
-            help="Config to use to generate .out files from .in files in test_cases_dir.",
+            help="Config to use to generate .out files from .in files in test_cases_dir",
         )]
         run_config: RunConfig,
+
+        #[structopt(
+            short,
+            long,
+            help="Run ktt test with generated results",
+        )]
+        evaluate: bool,
 
         #[structopt(
             parse(from_os_str), 
@@ -71,9 +78,9 @@ enum Ktt {
         #[structopt(
             short,
             long,
-            help="Execute tests and print verdicts"
+            help="Compare .ans with .out files and print verdicts"
         )]
-        execute: bool,
+        evaluate: bool,
 
         #[structopt(
             parse(from_os_str), 
@@ -103,24 +110,22 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             std::fs::create_dir_all(&test_cases_dir)?;
             kattis_test_tools::fetch_test_cases(&problem_name, &test_cases_dir)?;
         },
-        Ktt::Run{run_config, test_cases_dir} => {
+        Ktt::Run{run_config, evaluate, test_cases_dir} => {
             kattis_test_tools::run_test_cases(&run_config, &test_cases_dir)?;
-        },
-        Ktt::Test{generate_rust_tests, execute, test_cases_dir} => {
-            if let Some(tests_file_dir) = generate_rust_tests {
-                std::fs::create_dir_all(&tests_file_dir)?; 
-                kattis_test_tools::generate_rust_tests(&tests_file_dir, &test_cases_dir)?;
-            }
-            if execute {
+            if evaluate {
                 kattis_test_tools::evaluate_outputs(&test_cases_dir)?;
             }
         },
+        Ktt::Test{generate_rust_tests, evaluate, test_cases_dir} => {
+            if let Some(tests_file_dir) = generate_rust_tests {
+                std::fs::create_dir_all(&tests_file_dir)?; 
+                kattis_test_tools::generate_rust_tests(&tests_file_dir, &test_cases_dir)?;
+            } 
+            if evaluate {
+                kattis_test_tools::evaluate_outputs(&test_cases_dir)?;
+            } 
+        },
     }
-
-    // let tests_file_dir = std::path::Path::new("src");
-    // let test_cases_dir = std::path::Path::new("test_cases");
-    // kattis_test_tools::run_test_cases(test_cases_dir)?;
-    // kattis_test_tools::generate_integration_tests(tests_file_dir, test_cases_dir)?;
 
     Ok(())
 }
