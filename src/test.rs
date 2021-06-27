@@ -46,7 +46,25 @@ fn compare_file_tokens(file1: &Path, file2: &Path) -> Result<bool, Box<dyn std::
     Ok(tokens1==tokens2)
 }
 
-
 pub fn evaluate_output(out_path: &Path) -> Result<bool, Box<dyn std::error::Error>> {
     compare_file_tokens(out_path, &out_path.with_extension("ans"))
+}
+
+pub fn evaluate_outputs(test_cases_dir: &Path) -> Result<(), Box<dyn std::error::Error>> {
+    for entry in test_cases_dir.read_dir()?.filter_map(|dir_entry| dir_entry.ok()) {
+        if let Some(extension) = entry.path().extension() {
+            if let Some("ans") = extension.to_str() { //Lager test for tilsvarende "out"-fil hver gang den finner en "ans"-fil
+                let test_name = String::from(entry.path().file_stem().unwrap().to_str().unwrap());
+                let out_path = entry.path().with_extension("out");
+
+                if evaluate_output(&out_path)? {
+                    println!("{} passed", test_name);
+                } else {
+                    println!("{} failed", test_name);
+                }
+            }
+        }
+    }
+
+    Ok(())
 }

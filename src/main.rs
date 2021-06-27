@@ -112,10 +112,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 kattis_test_tools::generate_rust_tests(&tests_file_dir, &test_cases_dir)?;
             }
             if execute {
-                //ASSUMES RUST ENVIRONMENT
-                std::process::Command::new("cargo test")
-                    .spawn()
-                    .expect("Failed to execute cargo test");
+                kattis_test_tools::evaluate_outputs(&test_cases_dir)?;
             }
         },
     }
