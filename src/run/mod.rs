@@ -16,7 +16,9 @@ pub fn run_test_cases(run_config: &RunConfig, test_cases_dir: &Path) -> Result<(
                 let out_file = File::create(out_path)?;
                 let mut in_file_handle = BufReader::new(in_file); 
                 let mut out_file_handle = BufWriter::new(out_file); 
+                println!("Running {}", entry.path().file_stem().unwrap().to_str().unwrap());
                 interact::interact_remote(&mut in_file_handle, &mut out_file_handle, run_config)?;
+                println!("");
             }
         }
     }
