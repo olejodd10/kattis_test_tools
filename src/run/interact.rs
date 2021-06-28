@@ -18,6 +18,25 @@ pub fn interact_remote(input: &mut dyn BufRead, output: &mut dyn Write, run_conf
                 .spawn()
                 .expect("Failed to execute child")
         },
+        RunConfig::Haskell => {
+            Command::new("ghc")
+                .arg("main.hs")
+                .output() //Status can also be used
+                .expect("Failed to compile main.hs");
+            Command::new("main.exe")
+                .stdin(Stdio::piped())
+                .stdout(Stdio::piped())
+                .spawn()
+                .expect("Failed to execute child")            
+        },
+        RunConfig::Python => {
+            Command::new("python")
+                .arg("main.py")
+                .stdin(Stdio::piped())
+                .stdout(Stdio::piped())
+                .spawn()
+                .expect("Failed to execute child")
+        },
     };
 
     let mut input_pipe = child.stdin.take().expect("Failed to get stdin");
