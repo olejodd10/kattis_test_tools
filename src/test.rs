@@ -1,32 +1,6 @@
-use std::io::{Write, BufReader, BufWriter, Read};
+use std::io::{BufReader, Read};
 use std::path::Path;
 use std::fs::File;
-
-pub fn generate_rust_tests(tests_file_dir: &Path, test_cases_dir: &Path) -> Result<(), Box<dyn std::error::Error>> {
-    let tests_file = File::create(tests_file_dir.join("integration_tests.rs"))?;
-    let mut tests_file_handle = BufWriter::new(tests_file); 
-    writeln!(tests_file_handle, "#![cfg(test)]\n")?;
-
-    for entry in test_cases_dir.read_dir()?.filter_map(|dir_entry| dir_entry.ok()) {
-        if let Some(extension) = entry.path().extension() {
-            if let Some("ans") = extension.to_str() { //Lager test for tilsvarende "out"-fil hver gang den finner en "ans"-fil
-                let test_name = String::from(entry.path().file_stem().unwrap().to_str().unwrap())
-                .replace('-', "_");
-                let out_path = String::from(entry.path().with_extension("out").to_str().unwrap())
-                .replace('\\', "/");
-
-                writeln!(tests_file_handle, "{}",
-                    format!("#[test]\nfn {}() {{\n\tassert!(kattis_test_tools::evaluate_output(std::path::Path::new(\"{}\")).unwrap());\n}}\n", 
-                    test_name, 
-                    out_path)
-                )?;
-            }
-        }
-    }
-
-    Ok(())
-}
-
 
 fn compare_file_tokens(file1: &Path, file2: &Path) -> Result<bool, Box<dyn std::error::Error>> {
     let file1 = File::open(file1)?;

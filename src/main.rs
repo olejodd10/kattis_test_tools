@@ -72,15 +72,6 @@ enum Ktt {
         program: String,
 
         #[structopt(
-            parse(from_os_str), 
-            short="g",
-            long,
-            name="tests-file-dir",
-            help="Generate integration_tests.rs",
-        )]
-        generate_rust_tests: Option<std::path::PathBuf>,
-
-        #[structopt(
             short,
             long,
             help="Test existing .out files"
@@ -137,11 +128,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 }
             }
         },
-        Ktt::Test{program, generate_rust_tests, existing, test_cases_dir, test_case} => {
-            if let Some(tests_file_dir) = generate_rust_tests {
-                std::fs::create_dir_all(&tests_file_dir)?; 
-                kattis_test_tools::generate_rust_tests(&tests_file_dir, &test_cases_dir)?;
-            } 
+        Ktt::Test{program, existing, test_cases_dir, test_case} => {
             if let Some(test_case_path) = test_case {
                 let test_case_input_path = test_cases_dir.join(test_case_path.with_extension("in"));
                 if !existing {
