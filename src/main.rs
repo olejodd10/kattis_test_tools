@@ -2,9 +2,6 @@
 
 use structopt::StructOpt;
 
-//OBS!! Merk at std::error::Error er en trait, mens std::io::Error er en struct!!
-use kattis_test_tools::RunConfig;
-
 #[derive(StructOpt, Debug)]
 #[structopt(name = "Kattis Test Tools", about = "A tool for testing kattis problem solutions")]
 enum Ktt {
@@ -26,16 +23,16 @@ enum Ktt {
         test_cases_dir: std::path::PathBuf, 
     },
 
-    #[structopt(about="Generate test case output using local environment")]
+    #[structopt(about="Run program with inputs")]
     Run {
         #[structopt(
             short,
             long,
-            default_value="rust", 
-            name="config", 
-            help="Config to use to generate .out files from .in files in test_cases_dir",
+            default_value = "cargo run",
+            name="program",
+            help="Program to run to generate outputs",
         )]
-        run_config: RunConfig,
+        program: String,
 
         #[structopt(
             short,
@@ -63,8 +60,17 @@ enum Ktt {
         test_case: Option<std::path::PathBuf>, 
     },
 
-    #[structopt(about="Evaluate test case output")]
+    #[structopt(about="Run program with inputs and verify output")]
     Test {
+        #[structopt(
+            short,
+            long,
+            default_value = "cargo run",
+            name="program",
+            help="Program to run to generate outputs",
+        )]
+        program: String,
+
         #[structopt(
             parse(from_os_str), 
             short="g",
@@ -80,15 +86,6 @@ enum Ktt {
             help="Test existing .out files"
         )]
         existing: bool,
-
-        #[structopt(
-            short,
-            long,
-            default_value="rust", 
-            name="config", 
-            help="Config to use to generate .out files from .in files in test_cases_dir",
-        )]
-        run_config: RunConfig,
 
         #[structopt(
             parse(from_os_str), 
@@ -123,24 +120,24 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             std::fs::create_dir_all(&test_cases_dir)?;
             kattis_test_tools::fetch_test_cases(&problem_name, &test_cases_dir)?;
         },
-        Ktt::Run{run_config, answer, test_cases_dir, test_case} => {
+        Ktt::Run{program, answer, test_cases_dir, test_case} => {
             if answer {
                 if let Some(test_case_path) = test_case {
                     let test_case_input_path = test_cases_dir.join(test_case_path.with_extension("in"));
-                    kattis_test_tools::generate_ans_file(&run_config, &test_case_input_path)?;
+                    kattis_test_tools::run_input(&program, &test_case_input_path, true)?;
                 } else {
-                    kattis_test_tools::generate_ans_files(&run_config, &test_cases_dir)?;
+                    kattis_test_tools::run_inputs(&program, &test_cases_dir, true)?;
                 }
             } else {
                 if let Some(test_case_path) = test_case {
                     let test_case_input_path = test_cases_dir.join(test_case_path.with_extension("in"));
-                    kattis_test_tools::generate_out_file(&run_config, &test_case_input_path)?;
+                    kattis_test_tools::run_input(&program, &test_case_input_path, false)?;
                 } else {
-                    kattis_test_tools::generate_out_files(&run_config, &test_cases_dir)?;
+                    kattis_test_tools::run_inputs(&program, &test_cases_dir, false)?;
                 }
             }
         },
-        Ktt::Test{generate_rust_tests, existing, run_config, test_cases_dir, test_case} => {
+        Ktt::Test{program, generate_rust_tests, existing, test_cases_dir, test_case} => {
             if let Some(tests_file_dir) = generate_rust_tests {
                 std::fs::create_dir_all(&tests_file_dir)?; 
                 kattis_test_tools::generate_rust_tests(&tests_file_dir, &test_cases_dir)?;
@@ -148,12 +145,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             if let Some(test_case_path) = test_case {
                 let test_case_input_path = test_cases_dir.join(test_case_path.with_extension("in"));
                 if !existing {
-                    kattis_test_tools::generate_out_file(&run_config, &test_case_input_path)?;
+                    kattis_test_tools::run_input(&program, &test_case_input_path, false)?;
                 }
                 kattis_test_tools::evaluate_output(&test_case_input_path.with_extension("out"))?;
             } else {
                 if !existing {
-                    kattis_test_tools::generate_out_files(&run_config, &test_cases_dir)?;
+                    kattis_test_tools::run_inputs(&program, &test_cases_dir, false)?;
                 }
                 kattis_test_tools::evaluate_outputs(&test_cases_dir)?;
             }
