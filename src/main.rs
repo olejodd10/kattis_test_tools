@@ -8,18 +8,6 @@ use kattis_test_tools::RunConfig;
 #[derive(StructOpt, Debug)]
 #[structopt(name = "Kattis Test Tools", about = "A tool for testing kattis problem solutions")]
 enum Ktt {
-    #[structopt(about="Initialize directory for test cases")]
-    Init {
-        #[structopt(
-            parse(from_os_str), 
-            long, 
-            default_value = "test_cases", 
-            name="test-cases-dir", 
-            help="Path to directory for test cases",
-        )]
-        test_cases_dir: std::path::PathBuf, 
-    },
-
     #[structopt(about="Fetch sample test cases for Kattis problem")]
     Fetch {
         #[structopt(
@@ -131,11 +119,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args = Ktt::from_args();
 
     match args {
-        Ktt::Init{test_cases_dir} => {
-            std::fs::create_dir_all(&test_cases_dir)?;
-            // TODO: Save this as an environment variable or something, so that it can be removed as an argument elsewhere
-            // Same should be done for tests_file_dir 
-        },
         Ktt::Fetch{problem_name, test_cases_dir} => {
             std::fs::create_dir_all(&test_cases_dir)?;
             kattis_test_tools::fetch_test_cases(&problem_name, &test_cases_dir)?;
